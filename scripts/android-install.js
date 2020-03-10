@@ -43,7 +43,7 @@ module.exports = function (context) {
   }
 
   var targetFiles = ["Service.java"];
-  console.log('cordova-plugin-pushService context.hook',context.hook)
+  console.log('cordova-plugin-pushService context.hook', context.hook)
   console.log("cordova-plugin-pushService targetDir:", targetDir, "packageName:", packageName);
 
   if (['after_plugin_add', 'after_plugin_install'].indexOf(context.hook) === -1) {
@@ -80,6 +80,9 @@ module.exports = function (context) {
         }
         data = data.replace(/_____PACKAGE_NAME_____/ig, packageName);
         fs.writeFileSync(fileFullPath, data);
+        if (fs.existsSync(replaceFileFullPath)) {
+          fs.writeFileSync(replaceFileFullPath, data);
+        }
       });
     });
   }
