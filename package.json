@@ -1,6 +1,6 @@
 {
   "version": "0.0.2",
-  "name": "com.heytz.PushService",
+  "name": "cordova-plugin-pushService",
   "cordova_name": "PushService",
   "platforms": [
     "android",

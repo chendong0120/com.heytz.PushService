@@ -8,7 +8,7 @@ module.exports = function (context) {
 
 
   // The plugins array will be empty during platform add
-  if (plugins.length > 0 && plugins.indexOf('com.heytz.pushService') === -1) {
+  if (plugins.length > 0 && plugins.indexOf('cordova-plugin-pushService') === -1) {
     return;
   }
   var ConfigParser = null;
@@ -43,7 +43,7 @@ module.exports = function (context) {
   }
 
   var targetFiles = ["Service.java"];
-  console.log("com.heytz.pushService targetDir:", targetDir, "packageName:", packageName);
+  console.log("cordova-plugin-pushService targetDir:", targetDir, "packageName:", packageName);
 
   if (['after_plugin_add', 'after_plugin_install'].indexOf(context.hook) === -1) {
     // remove it?
