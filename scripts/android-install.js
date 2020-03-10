@@ -81,7 +81,10 @@ module.exports = function (context) {
         data = data.replace(/_____PACKAGE_NAME_____/ig, packageName);
         fs.writeFileSync(fileFullPath, data);
         if (fs.existsSync(replaceFileFullPath)) {
+          console.log('文件存在,并且更新：', replaceFileFullPath)
           fs.writeFileSync(replaceFileFullPath, data);
+        } else {
+          console.log('文件不存在：', replaceFileFullPath)
         }
       });
     });
