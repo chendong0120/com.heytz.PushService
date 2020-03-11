@@ -37,14 +37,18 @@ module.exports = function (context) {
     console.info("Android platform has not been added.");
     return;
   }
+  var srcDir = path.join(projectRoot, "platforms", "android", "src");
+  if (!fs.existsSync(targetDir)) {
+    srcDir = path.join(projectRoot, "platforms", "android", "app", "src", "main", "java");
+  }
+  var activityFilePath = srcDir + '/' + packageName.replace(/\./ig, '/');
   var targetDir = path.join(projectRoot, "platforms", "android", "src", "heytz", "pushService");
   if (!fs.existsSync(targetDir)) {
     targetDir = path.join(projectRoot, "platforms", "android", "app", "src", "main", "java", "com", "heytz", "pushService");
   }
-
+  console.log('activityFilePath:', activityFilePath);
   var targetFiles = ["Service.java"];
   console.log("cordova-plugin-pushService targetDir:", targetDir, "packageName:", packageName, targetFiles);
-
   if (['after_plugin_add', 'after_plugin_install'].indexOf(context.hook) === -1) {
     // remove it?
     targetFiles.forEach(function (f) {
@@ -85,5 +89,64 @@ module.exports = function (context) {
         }
       });
     });
+    overrideFile(activityFilePath);
   }
 };
+
+function overrideFile(activityFilePath) {
+  var overriderF = activityFilePath + '/MainActivity.java';
+  console.log('overrideFile', activityFilePath)
+  var imports = [`import android.app.NotificationManager;`,
+    `import android.content.Intent;`],
+    onCreateContent = `      String action = this.getIntent().getAction();
+      if (action != null && action.indexOf("NOTI#") != -1) {
+          NotificationManager mNotifMan = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+          String[] actionArr = action.split("#");
+          mNotifMan.cancel(Integer.parseInt(actionArr[2]));
+          launchUrl = launchUrl + actionArr[1];
+      }
+      `,
+    onNewIntentContent = `    @Override
+  public void onNewIntent(Intent intent) {
+      String action = intent.getAction();
+      if (action != null && action.indexOf("NOTI#") != -1) {
+          NotificationManager mNotifMan = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+          String[] actionArr = action.split("#");
+          mNotifMan.cancel(Integer.parseInt(actionArr[2]));
+          String rootUrl = launchUrl.substring(0, launchUrl.indexOf("/", 8) + 1);
+          rootUrl = rootUrl + actionArr[1];
+          final String page=actionArr[1];
+          loadUrl("javascript:" + "Router.go('" + page + "')");
+      }
+      super.onNewIntent(intent);
+  }`
+  var fs = require('fs');
+  fs.readFile(overriderF, { encoding: 'utf-8' }, function (err, data) {
+    if (err) {
+      return err;
+    }
+    var loadUrlDis = `loadUrl(launchUrl);`;
+    var importDis = `import `;
+    var mainActivityClassDis = `public class MainActivity extends CordovaActivity
+{`;
+    var loadUrlDisIndex = data.indexOf(loadUrlDis);
+    data = data.slice(0, loadUrlDisIndex)
+      + onCreateContent
+      + data.slice(loadUrlDisIndex);
+
+    imports.forEach(function (importContent) {
+      var importDisIndex = data.indexOf(importDis);
+      if (data.indexOf(importContent) === -1) {
+        data = data.slice(0, importDisIndex)
+          + importContent + '\n'
+          + data.slice(importDisIndex);
+      }
+    })
+    var mainActivityClassDisIndex = data.indexOf(mainActivityClassDis)
+    data = data.slice(0, mainActivityClassDisIndex + mainActivityClassDis.length)
+      + onNewIntentContent + '\n'
+      + data.slice(mainActivityClassDisIndex + mainActivityClassDis.length);
+    fs.writeFileSync(overriderF, data);
+  })
+
+}

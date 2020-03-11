@@ -17,8 +17,8 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-import _____PACKAGE_NAME_____.MainActivity;
-import _____PACKAGE_NAME_____.R;
+import com.heytz.chicreprdApp.MainActivity;
+import com.heytz.chicreprdApp.R;
 
 import org.eclipse.paho.client.mqttv3.*;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
