@@ -26,6 +26,8 @@ import org.greenrobot.eventbus.EventBus;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -113,7 +115,7 @@ public class Service extends android.app.Service {
     private long mStartTime;
     private Timer timer;
     private WakeLock wakeLock = null;
-    private boolean initiativeClose=false;
+    private boolean initiativeClose = false;
 
     // Static method to start the service
     public static void actionStart(Context ctx, String url, String topic, String username, String password) {
@@ -193,7 +195,7 @@ public class Service extends android.app.Service {
     class RemindTask extends TimerTask {
         public void run() {
             System.out.println("timer task running");
-            if (client==null||(client != null && !client.isConnected())) {
+            if (client == null || (client != null && !client.isConnected())) {
                 reconnectIfNecessary();
             }
             timer.schedule(new RemindTask(), 1000 * 5);
@@ -308,9 +310,9 @@ public class Service extends android.app.Service {
         if (client != null) {
             try {
 //                client.disconnect();
-                initiativeClose=true;
+                initiativeClose = true;
                 timer.cancel();
-                client.disconnectForcibly(3000,1000,true);
+                client.disconnectForcibly(3000, 1000, true);
                 client.close();
 //                client.unsubscribe()
 
@@ -322,7 +324,7 @@ public class Service extends android.app.Service {
             initiativeCloseTimer.schedule(new TimerTask() {
                 public void run() {
                     System.out.println("set initiativeClose: false");
-                    initiativeClose=false;
+                    initiativeClose = false;
                 }
             }, 1000 * 5);
         }
@@ -400,7 +402,7 @@ public class Service extends android.app.Service {
     };
 
     // Display the topbar notification
-    private void showNotification(String text) {
+    private void showNotification(String text) throws IllegalAccessException {
         PushMsgInfo pushMsgInfo = new PushMsgInfo();
         try {
             JSONObject notifyObj = new JSONObject(text);
@@ -423,7 +425,19 @@ public class Service extends android.app.Service {
      * @return
      */
     @NonNull
-    private NotificationCompat.Builder createNotificationCompatBuilder(Context context, PushMsgInfo pushMsg) {
+    private NotificationCompat.Builder createNotificationCompatBuilder(Context context, PushMsgInfo pushMsg) throws IllegalAccessException {
+        int icon = 0;
+        Field[] fields = R.mipmap.class.getDeclaredFields();
+        Field field = null;
+        for (int i = 0; i < fields.length; i++) {
+            if (fields[i].getName().equalsIgnoreCase("icon")
+                    || fields[i].getName().equalsIgnoreCase("ic_launcher")
+            ) {
+                field = fields[i];
+                break;
+            }
+        }
+        icon = field.getInt(R.mipmap.class);
         // 通知栏点击接收者
         Intent i = new Intent(context, MainActivity.class);
         String page = pushMsg.getPage();
@@ -433,7 +447,7 @@ public class Service extends android.app.Service {
         PendingIntent pendingIntent = PendingIntent.getActivities(context, notifyId, new Intent[]{i}, PendingIntent.FLAG_UPDATE_CURRENT);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "heytz");
         builder.setDefaults(Notification.DEFAULT_ALL);
-        builder.setSmallIcon(R.mipmap.icon);
+        builder.setSmallIcon(icon);
         builder.setTicker(pushMsg.getTicker());
         builder.setContentTitle(pushMsg.getTitle());
         builder.setContentText(pushMsg.getContent());
@@ -499,8 +513,8 @@ public class Service extends android.app.Service {
             int willQos = 0;
             connOpts.setCleanSession(MQTT_CLEAN_START);
             connOpts.setKeepAliveInterval(MQTT_KEEP_ALIVE);
-            if(client != null){
-                Log.i(TAG,"client already exists");
+            if (client != null) {
+                Log.i(TAG, "client already exists");
                 connected = client.isConnected();
                 return;
             }
@@ -512,7 +526,7 @@ public class Service extends android.app.Service {
                 public void connectionLost(Throwable cause) {
                     connected = false;
                     Log.i("mqttalabs", cause.toString());
-                    if (isNetworkAvailable()&&initiativeClose==false) {
+                    if (isNetworkAvailable() && initiativeClose == false) {
                         reconnectIfNecessary();
                     }
                 }
